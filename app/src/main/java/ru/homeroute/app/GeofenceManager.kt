@@ -28,13 +28,22 @@ object GeofenceManager {
 
     fun register(context: Context) {
         if (!AppPrefs.hasHome(context) || !AppPrefs.isEnabled(context)) return
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED) return
+        if (ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.ACCESS_FINE_LOCATION
+            ) != PackageManager.PERMISSION_GRANTED
+        ) return
 
         val geofence = Geofence.Builder()
             .setRequestId(GEOFENCE_ID)
-            .setCircularRegion(AppPrefs.homeLat(context), AppPrefs.homeLon(context), AppPrefs.radius(context).toFloat())
-            .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT)
+            .setCircularRegion(
+                AppPrefs.homeLat(context),
+                AppPrefs.homeLon(context),
+                AppPrefs.radius(context).toFloat()
+            )
+            .setTransitionTypes(
+                Geofence.GEOFENCE_TRANSITION_ENTER or Geofence.GEOFENCE_TRANSITION_EXIT
+            )
             .setNotificationResponsiveness(5_000)
             .setLoiteringDelay(30_000)
             .setExpirationDuration(Geofence.NEVER_EXPIRE)
@@ -45,8 +54,14 @@ object GeofenceManager {
             .addGeofence(geofence)
             .build()
 
-        client(context).removeGeofences(pendingIntent(context)).addOnCompleteListener {
-            client(context).addGeofences(request, pendingIntent(context))
+        try {
+            client(context).removeGeofences(pendingIntent(context)).addOnCompleteListener {
+                try {
+                    client(context).addGeofences(request, pendingIntent(context))
+                } catch (_: SecurityException) {
+                }
+            }
+        } catch (_: SecurityException) {
         }
     }
 }
